@@ -1,8 +1,6 @@
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
-use quote::{quote, ToTokens};
-use syn::{Expr, Result};
-
+use syn::{Ident};
+use proc_macro2::Span;
 
 /*
 Процедурный макрос, принимающий набор строковых литералов - имён функций.
@@ -11,21 +9,19 @@ use syn::{Expr, Result};
 Число функций может быть произвольным.
 Пример:
 let (fo_result, fooo_result) = my_macro!(""fo"", ""foo"", ""fooo"");
-
- */
+*/
 
 #[proc_macro]
 pub fn my_proc_macro(input: TokenStream) -> TokenStream {
-     let tokens: proc_macro2::TokenStream = syn::parse_str(&input.to_string()).unwrap(); //  .split("").unwrap(); // expect("`my_proc_macro` macro expects only functions");
+    let tokens: proc_macro2::TokenStream = proc_macro2::TokenStream::from(input); //  .split("").unwrap(); // expect("`my_proc_macro` macro expects only functions");
 
-     let clean_tokens: Vec<String> = tokens.into_iter()
-         .filter(|token| token.to_string().len() %2 ==0)
-         .map(|token| token.to_string().trim_matches('\"').to_owned())
-         .collect();
+    let clean_tokens: Vec<_> = tokens.into_iter()
+        .filter(|token| token.to_string().len() % 2 == 0)
+        .map(|token| token.to_string().trim_matches('\"').to_owned())
+        .map(|t| Ident::new(&t, Span::call_site()))
+        .collect();
 
     quote::quote! {
-            format_ident!((#clean_tokens), *)
+      (#(#clean_tokens(),)*)
     }.into()
-
-    // TokenStream::default()
 }
